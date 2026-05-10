@@ -1,0 +1,62 @@
+CREATE TABLE IF NOT EXISTS users (
+  tg_id BIGINT UNSIGNED PRIMARY KEY,
+  username VARCHAR(255) NULL,
+  elo INT NOT NULL DEFAULT 1000,
+  avatar VARCHAR(512) NULL,
+  exp INT NOT NULL DEFAULT 0,
+  level INT NOT NULL DEFAULT 1,
+  solved_json JSON NULL,
+  streak_days INT NOT NULL DEFAULT 0,
+  last_login DATETIME NULL,
+  current_task_id INT NULL,
+  current_state VARCHAR(64) NOT NULL DEFAULT 'idle',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_elo (elo)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS tasks (
+  id INT PRIMARY KEY,
+  type TINYINT UNSIGNED NOT NULL,
+  text LONGTEXT NOT NULL,
+  answer VARCHAR(255) NOT NULL,
+  difficulty_elo INT NOT NULL,
+  code_template TEXT NULL,
+  images_json JSON NULL,
+  source_url VARCHAR(512) NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_type (type),
+  INDEX idx_difficulty (difficulty_elo),
+  INDEX idx_type_difficulty (type, difficulty_elo)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS duels (
+  match_id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  p1_id BIGINT UNSIGNED NOT NULL,
+  p2_id BIGINT UNSIGNED NULL,
+  task_id INT NOT NULL,
+  p1_answer VARCHAR(255) NULL,
+  p2_answer VARCHAR(255) NULL,
+  start_time DATETIME NULL,
+  winner_id BIGINT UNSIGNED NULL,
+  status ENUM('searching','active','finished') NOT NULL DEFAULT 'searching',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_status (status),
+  INDEX idx_players (p1_id, p2_id),
+  CONSTRAINT fk_duel_task FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS answer_logs (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  tg_id BIGINT UNSIGNED NOT NULL,
+  task_id INT NOT NULL,
+  submitted_answer VARCHAR(255) NOT NULL,
+  is_correct TINYINT(1) NOT NULL,
+  elo_before INT NOT NULL,
+  elo_after INT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_user_created (tg_id, created_at),
+  CONSTRAINT fk_answer_task FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
